@@ -1,0 +1,101 @@
+import pgzrun
+from random import randint
+
+# Constants
+WIDTH = 600
+HEIGHT = 500
+TITLE = "Bumble bee and flower"
+
+# Game Variables
+score = 0
+game_over = False
+time_left = 60  # 60 seconds game duration
+bee_speed = 3
+flower_timer = 0
+
+# Bee and Flower Setup
+bee = Actor("bee")
+bee.pos = 100,100
+
+flower = Actor("flower")
+flower.pos = 200,200
+
+# Draw Function
+def draw():
+    screen.blit("background", (0, 0))
+    flower.draw()
+    bee.draw()
+    
+    # Display score and time left
+    screen.draw.text(f"Score: {score}", color="white", topleft=(10, 10))
+    screen.draw.text(f"Time: {time_left}s", color="white", topright=(WIDTH-10, 10))
+    
+    # Show game over screen if game is over
+    if game_over:
+        screen.fill((255, 0, 0, 0.5))  # Red semi-transparent overlay
+        screen.draw.text(f"Time's up! Your final score: {score}", midtop=(WIDTH/2, HEIGHT/2 - 20))
+        screen.draw.text("Press 'R' to Restart", midtop=(WIDTH/2, HEIGHT/2 + 20))
+
+# Place flower randomly on the screen
+def place_flower():
+    flower.x = randint(70, WIDTH - 70)
+    flower.y = randint(70, HEIGHT - 70)
+
+# Decrease time left every second
+def countdown():
+    global time_left
+    if time_left > 0:
+        time_left -= 1
+    else:
+        time_up()
+
+# Check if time is up and stop the game
+def time_up():
+    global game_over
+    game_over = True
+
+# Update Function
+def update():
+    global score, bee_speed, flower_timer
+    
+    if game_over:
+        restart_game()
+        return  # Skip the rest of the update loop when game is over
+    
+    # Move the bee with arrow keys
+    if keyboard.left:
+        bee.x -= bee_speed
+    if keyboard.right:
+        bee.x += bee_speed
+    if keyboard.up:
+        bee.y -= bee_speed
+    if keyboard.down:
+        bee.y += bee_speed
+    
+    # Check for collision with flower
+    flower_collected = bee.colliderect(flower)
+    if flower_collected:
+        score += 10
+        flower_timer += 1
+        place_flower()
+        
+        # Increase speed and difficulty after collecting flowers
+        if flower_timer % 5 == 0:
+            bee_speed += 1  # Increase bee speed for difficulty
+
+# Function to restart the game
+def restart_game():
+    global score, time_left, game_over, bee_speed, flower_timer
+    if keyboard.r:
+        score = 0
+        time_left = 60
+        game_over = False
+        bee_speed = 3
+        flower_timer = 0
+        place_flower()
+
+# Schedule functions
+clock.schedule_interval(countdown, 1.0)  # Decrease time every second
+
+# Run the game
+pgzrun.go()
