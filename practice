@@ -1,0 +1,130 @@
+import pygame
+import sys
+
+# Initialize pygame
+pygame.init()
+
+# Screen dimensions
+WIDTH, HEIGHT = 800, 600
+
+# Colors
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+BLUE = (0, 0, 255)
+BLACK = (0, 0, 0)
+
+# Screen setup
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Tag Game")
+
+# Clock for controlling frame rate
+clock = pygame.time.Clock()
+
+# Font setup
+font = pygame.font.Font(None, 36)
+
+class Character:
+    def __init__(self, x, y, image_path, speed, color):
+        self.image = pygame.image.load(image_path)
+        self.image = pygame.transform.scale(self.image, (50, 50))  # Resize characters to 50x50
+        self.start_x = x
+        self.start_y = y
+        self.rect = self.image.get_rect(topleft=(x, y))
+        self.speed = speed
+        self.color = color
+        self.is_it = False
+
+    def move(self, keys, controls):
+        if keys[controls['up']]:
+            self.rect.y -= self.speed
+        if keys[controls['down']]:
+            self.rect.y += self.speed
+        if keys[controls['left']]:
+            self.rect.x -= self.speed
+        if keys[controls['right']]:
+            self.rect.x += self.speed
+
+    def draw(self, screen):
+        if self.is_it:
+            pygame.draw.rect(screen, RED, self.rect.inflate(10, 10), 3)  # Highlight with red border
+        screen.blit(self.image, self.rect.topleft)
+
+    def stay_in_bounds(self, screen_rect):
+        self.rect.clamp_ip(screen_rect)
+
+    def reset_position(self):
+        self.rect.topleft = (self.start_x, self.start_y)
+
+# Create characters
+char1 = Character(100, 100, "char1.png", 5, RED)
+char2 = Character(600, 400, "char2.png", 5, BLUE)
+
+# Assign initial "it" status
+char1.is_it = True
+
+# Scores and timer
+score1 = 0
+score2 = 0
+start_time = pygame.time.get_ticks()
+
+# Main game loop
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    # Key handling
+    keys = pygame.key.get_pressed()
+
+    # Move characters
+    char1.move(keys, {'up': pygame.K_w, 'down': pygame.K_s, 'left': pygame.K_a, 'right': pygame.K_d})
+    char2.move(keys, {'up': pygame.K_UP, 'down': pygame.K_DOWN, 'left': pygame.K_LEFT, 'right': pygame.K_RIGHT})
+
+    # Keep characters within bounds
+    char1.stay_in_bounds(screen.get_rect())
+    char2.stay_in_bounds(screen.get_rect())
+
+    # Check for tag collision
+    if char1.is_it and char1.rect.colliderect(char2.rect):
+        char1.is_it = False
+        char2.is_it = True
+        score1 += 1
+        char1.reset_position()
+        char2.reset_position()
+        char2.speed += 1  # Increase speed of the tagged player
+    elif char2.is_it and char2.rect.colliderect(char1.rect):
+        char2.is_it = False
+        char1.is_it = True
+        score2 += 1
+        char1.reset_position()
+        char2.reset_position()
+        char1.speed += 1  # Increase speed of the tagged player
+
+    # Calculate elapsed time
+    elapsed_time = (pygame.time.get_ticks() - start_time) // 1000
+
+    # Clear the screen
+    screen.fill(WHITE)
+
+    # Draw characters
+    char1.draw(screen)
+    char2.draw(screen)
+
+    # Draw scores
+    score_text = font.render(f"Player 1: {score1}   Player 2: {score2}", True, BLACK)
+    screen.blit(score_text, (10, 10))
+
+    # Draw timer
+    timer_text = font.render(f"Time: {elapsed_time}s", True, BLACK)
+    screen.blit(timer_text, (WIDTH - 150, 10))
+
+    # Update the display
+    pygame.display.flip()
+
+    # Limit the frame rate
+    clock.tick(60)
+
+# Quit pygame
+pygame.quit()
+sys.exit()
